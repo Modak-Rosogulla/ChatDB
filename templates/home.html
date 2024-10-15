@@ -24,5 +24,29 @@
         <span class="btn-text">MongoDB</span>
       </a>
     </div>
+
+    <h1>Upload CSV File</h1>
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".csv" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                alert("File uploaded successfully!");
+            } else {
+                alert("Failed to upload the file.");
+            }
+        };
+    </script>
   </body>
 </html>

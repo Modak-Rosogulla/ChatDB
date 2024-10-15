@@ -2,13 +2,14 @@ import pandas as pd
 import json
 import requests
 import sys
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
-# Firebase Database URL (replace with your actual Firebase URL)
-# DATABASE_URL = "https://homework1-8757c-default-rtdb.firebaseio.com/"
-DATABASE_URL = "https://dsci551-877cc-default-rtdb.firebaseio.com/"
+DATABASE_URL = os.getenv('DATABASE_URL')
 
 # 1. Load data from csv
-def load_data_to_firebase(csv_file):
+def load_data_to_firebase(csv_file, DATABASE_URL=DATABASE_URL):
     # INPUT : Path to the CSV file
     # RETURN : Status code after Python REST call to add the data [response.status_code]
     # EXPECTED RETURN : 200
