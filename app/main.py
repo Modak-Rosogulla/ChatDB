@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from fastapi.responses import JSONResponse
 import os
 import shutil
+from pydantic import BaseModel
+
 
 load_dotenv()
 FIREBASE_URL = os.getenv('DATABASE_URL')
@@ -16,6 +18,10 @@ app = FastAPI()
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+class ChatMessage(BaseModel):
+    message: str
 
 
 @app.get("/")
@@ -36,12 +42,16 @@ def mongodb():
     return {"message": "MongoDB"}
 
 @app.get("/firebase")
-def firebase():
+def firebase(request: Request):
     # load_data_to_firebase("app/data.csv")
     AQI_data = requests.get(FIREBASE_URL + "/AQI.json")
     print(f"response_type: {type(AQI_data)}")
 
-    return AQI_data.json()
+    # return AQI_data.json()
+    return templates.TemplateResponse(
+        name="firebase.html", 
+        context={"request": request, "AQI_data": AQI_data.json()}
+    )
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -66,3 +76,45 @@ async def upload_file(file: UploadFile = File(...)):
 
     # except Exception as e:
     #     return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/chat")
+async def chat(message: ChatMessage):
+    # Simple echo response for demonstration
+    # Replace this with your logic for generating responses
+    user_message = message.message
+    db_url = FIREBASE_URL + user_message
+
+    response = requests.get(db_url)
+    # bot_response = f"Echo: {user_message}"
+
+    # return JSONResponse(content={"reply": bot_response})
+
+    # print(f"Executing requests.get({db_url})")
+    
+    if response.status_code == 200:
+        bot_response = response.json()
+        return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
+        # bot_response = f"Your query was executed successfully: {bot_response}"
+
+    else:
+        bot_response = f" {response.status_code} - {response.text}"
+        return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+
+@app.get("/firebase_data")
+async def chat(request: Request):
+    # user_message = message.message
+    db_url = FIREBASE_URL + "/.json"
+
+    print(f"Executing requests.get({db_url})")
+
+    response = requests.get(db_url)
+    
+    if response.status_code == 200:
+        # return JSONResponse(content={"reply": response.json() })
+        return response.json()
+        # bot_response = f"Your query was executed successfully: {bot_response}"
+
+    else:
+        bot_response = f" {response.status_code} - {response.text}"
+        return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+

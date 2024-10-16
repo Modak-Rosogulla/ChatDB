@@ -1,35 +1,51 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Page</title>
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}" />
-  </head>
-  <body>
+</head>
+<body>
     <div class="container">
-      <div class="header">
-        <h4>FastAPI with Google Oauth</h4>
-        <div class="img-box">
-          <img class="img" src="{{ url_for('static', path='icons/avatar.png') }}" />
-        </div>
-      </div>
-      <a href="/firebase" class="google-btn">
-        <span class="btn-text">Firebase</span>
-      </a>
-      
-      <a href="/mysql" class="google-btn">
-        <span class="btn-text">MySQL</span>
-      </a>
-      
-      <a href="/mongodb" class="google-btn">
-        <span class="btn-text">MongoDB</span>
-      </a>
-    </div>
+        <h1>Welcome to ChatDB</h1>
+        <!-- Header Section -->
+        <!-- <div class="header">
+            <h4>FastAPI with Google Oauth</h4>
+            <div class="img-box">
+                <img class="img" src="{{ url_for('static', path='icons/avatar.png') }}" />
+            </div>
+        </div> -->
 
-    <h1>Upload CSV File</h1>
-    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".csv" required>
-        <button type="submit">Upload</button>
-    </form>
+        <!-- Navigation Buttons -->
+        <a href="/firebase" class="google-btn">
+            <span class="btn-text">Firebase</span>
+        </a>
+        
+        <a href="/mysql" class="google-btn">
+            <span class="btn-text">MySQL</span>
+        </a>
+        
+        <a href="/mongodb" class="google-btn">
+            <span class="btn-text">MongoDB</span>
+        </a>
+
+        <!-- Upload CSV Form -->
+        <h1>Upload CSV File</h1>
+        <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".csv" required>
+            <button type="submit">Upload</button>
+        </form>
+
+        <!-- Chat Interface Section -->
+        <div class="chat-box" id="chat-box">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="input-container">
+            <input type="text" id="chat-input" placeholder="Type your message here..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
 
     <script>
         document.getElementById('uploadForm').onsubmit = async (event) => {
@@ -47,6 +63,39 @@
                 alert("Failed to upload the file.");
             }
         };
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (message) {
+                addMessageToChat('user', message);
+                input.value = '';
+
+                // Send message to backend
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addMessageToChat('bot', data.reply);
+                } else {
+                    addMessageToChat('bot', 'Sorry, there was an error.');
+                }
+            }
+        }
+
+        function addMessageToChat(sender, message) {
+            const chatBox = document.getElementById('chat-box');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}`;
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     </script>
-  </body>
+</body>
 </html>
