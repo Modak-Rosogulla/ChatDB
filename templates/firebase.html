@@ -13,6 +13,12 @@
         <h2>Firebase JSON Viewer</h2>
         <div id="json-viewer"></div>
         <button onclick="loadFirebaseData()">Load Firebase Data</button> <input type="text">
+
+        <div class="button-container">
+            <button onclick="refreshDataPreserveState()">Refresh Data (Preserve State)</button>
+            <button onclick="refreshDataResetState()">Refresh Data (Reset State)</button>
+        </div>
+        
     </div>
 
     <div class="container">
@@ -27,7 +33,9 @@
         </div>
     </div>
 
-    <script>
+    
+
+    <!-- <script>
         function createTree(container, json) {
             container.innerHTML = '';
 
@@ -83,21 +91,6 @@
     </script>
 
     <script>
-        // document.getElementById('uploadForm').onsubmit = async (event) => {
-        //     event.preventDefault();
-        //     const formData = new FormData(event.target);
-
-        //     const response = await fetch('/upload', {
-        //         method: 'POST',
-        //         body: formData
-        //     });
-
-        //     if (response.ok) {
-        //         alert("File uploaded successfully!");
-        //     } else {
-        //         alert("Failed to upload the file.");
-        //     }
-        // };
         
 
         async function sendMessage() {
@@ -122,6 +115,7 @@
                     addMessageToChat('bot', 'Sorry, there was an error.');
                 }
             }
+            loadFirebaseData();
         }
 
         function addMessageToChat(sender, message) {
@@ -133,7 +127,133 @@
             chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
+         -->
+         <script>
+            let expandedPaths = new Set();
         
-
+            function createTree(container, json, currentPath = '') {
+                container.innerHTML = '';
+        
+                function createNode(name, value, path) {
+                    const node = document.createElement('div');
+                    node.className = 'node';
+        
+                    const label = document.createElement('span');
+                    label.className = typeof value === 'object' && value !== null ? 'expandable' : 'leaf';
+                    label.textContent = name;
+        
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'children hidden';
+        
+                    if (typeof value === 'object' && value !== null) {
+                        label.onclick = () => {
+                            const isVisible = !childrenContainer.classList.contains('hidden');
+                            childrenContainer.classList.toggle('hidden', isVisible);
+        
+                            if (isVisible) {
+                                expandedPaths.delete(path);
+                                label.textContent = name;
+                            } else {
+                                expandedPaths.add(path);
+                                label.textContent = `▶ ${name}`;
+                            }
+                        };
+        
+                        // Expand if path is in expandedPaths
+                        if (expandedPaths.has(path)) {
+                            childrenContainer.classList.remove('hidden');
+                            label.textContent = `▶ ${name}`;
+                        }
+        
+                        for (const key in value) {
+                            childrenContainer.appendChild(createNode(key, value[key], `${path}/${key}`));
+                        }
+                    } else {
+                        const valueSpan = document.createElement('span');
+                        valueSpan.className = 'value';
+                        valueSpan.textContent = `: ${value}`;
+                        label.appendChild(valueSpan);
+                    }
+        
+                    node.appendChild(label);
+                    node.appendChild(childrenContainer);
+        
+                    return node;
+                }
+        
+                for (const key in json) {
+                    container.appendChild(createNode(key, json[key], key));
+                }
+            }
+        
+            async function loadFirebaseData(preserveState = true) {
+                if (!preserveState) {
+                    expandedPaths.clear();
+                }
+        
+                try {
+                    const response = await fetch('/firebase_data');
+                    if (!response.ok) {
+                        throw new Error(`Error fetching data: ${response.statusText}`);
+                    }
+                    const data = await response.json();
+                    const container = document.getElementById('json-viewer');
+                    createTree(container, data);
+                } catch (error) {
+                    console.error(error);
+                    // Optionally display an error message in the UI
+                }
+            }
+        
+            function refreshDataPreserveState() {
+                loadFirebaseData(true);
+            }
+        
+            function refreshDataResetState() {
+                loadFirebaseData(false);
+            }
+        
+            async function sendMessage() {
+                const input = document.getElementById('chat-input');
+                const message = input.value.trim();
+        
+                if (message) {
+                    addMessageToChat('user', message);
+                    input.value = '';
+        
+                    // Send message to backend
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message })
+                    });
+        
+                    if (response.ok) {
+                        const data = await response.json();
+                        addMessageToChat('bot', data.reply);
+                    } else {
+                        addMessageToChat('bot', 'Sorry, there was an error.');
+                    }
+        
+                    // After receiving response, reload Firebase data and preserve expanded state
+                    refreshDataPreserveState();
+                }
+            }
+        
+            function addMessageToChat(sender, message) {
+                const chatBox = document.getElementById('chat-box');
+                const messageElement = document.createElement('div');
+                messageElement.className = `message ${sender}`;
+                messageElement.textContent = message;
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        
+            // Load data initially with all nodes collapsed
+            window.onload = () => {
+                refreshDataResetState();
+            };
+        </script>
+        
 </body>
 </html>
