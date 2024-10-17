@@ -70,7 +70,10 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    load_data_to_firebase(file_location, DATABASE_URL=FIREBASE_URL)
+    json_data = json.load(open(file_location, "r"))
+    # print(f"json_data: {json_data}")
+    # load_data_to_firebase(file_location, DATABASE_URL=FIREBASE_URL)
+    requests.put(FIREBASE_URL + "/uploads.json", json=json_data )
 
     return JSONResponse(content={"message": "File uploaded successfully!"})
 
@@ -82,23 +85,80 @@ async def chat(message: ChatMessage):
     # Simple echo response for demonstration
     # Replace this with your logic for generating responses
     user_message = message.message
-    db_url = FIREBASE_URL + user_message
-
-    response = requests.get(db_url)
-    # bot_response = f"Echo: {user_message}"
-
-    # return JSONResponse(content={"reply": bot_response})
-
-    # print(f"Executing requests.get({db_url})")
+    split_message = user_message.split("=")
     
-    if response.status_code == 200:
-        bot_response = response.json()
-        return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
-        # bot_response = f"Your query was executed successfully: {bot_response}"
+    command = split_message[0]
 
+    gets = ["get", "Get", "GET"]
+    puts = ["put", "Put", "PUT"]
+    posts = ["post", "Post", "POST"]
+    deletes = ["delete","Delete", "DELETE"]
+
+    if command in gets:
+        db_url = FIREBASE_URL + user_message
+        response = requests.get(db_url)
+        if response.status_code == 200:
+            bot_response = response.json()
+            return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
+            # bot_response = f"Your query was executed successfully: {bot_response}"
+
+        else:
+            bot_response = f" {response.status_code} - {response.text}"
+            return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+        
+    elif command in puts:
+        url = split_message[1]
+        data = split_message[2]
+
+        db_url = FIREBASE_URL + url
+        # data = json.loads(data)
+        # data = f"""{data[1:-1]}"""
+        data = data.replace("'", '"')
+        print(data)
+        data = json.loads(data)
+        response = requests.put(db_url, json=data)
+        if response.status_code == 200:
+            bot_response = response.json()
+            return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
+            # bot_response = f"Your query was executed successfully: {bot_response}"
+
+        else:
+            bot_response = f" {response.status_code} - {response.text}"
+            return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+        
+    elif command in posts:
+        url = split_message[1]
+        data = split_message[2]
+
+        db_url = FIREBASE_URL + url
+        
+        response = requests.post(db_url, json=data)
+        if response.status_code == 200:
+            bot_response = response.json()
+            return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
+            # bot_response = f"Your query was executed successfully: {bot_response}"
+
+        else:
+            bot_response = f" {response.status_code} - {response.text}"
+            return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+        
+    elif command in deletes:
+        url = split_message[1]
+
+        db_url = FIREBASE_URL + url
+
+        response = requests.delete(db_url)
+        if response.status_code == 200:
+            bot_response = response.json()
+            return JSONResponse(content={"reply": f"Data was deleted: \n {bot_response}" })
+            # bot_response = f"Your query was executed successfully: {bot_response}"
+
+        else:
+            bot_response = f" {response.status_code} - {response.text}"
+            return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+    
     else:
-        bot_response = f" {response.status_code} - {response.text}"
-        return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+        return JSONResponse(content={"reply": f"Sorry please try amongst: GET, PUT, POST."})
 
 @app.get("/firebase_data")
 async def chat(request: Request):
