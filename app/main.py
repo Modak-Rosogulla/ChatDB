@@ -93,6 +93,7 @@ async def chat(message: ChatMessage):
     puts = ["put", "Put", "PUT"]
     posts = ["post", "Post", "POST"]
     deletes = ["delete","Delete", "DELETE"]
+    patches = ["patch", "Patch", "PATCH"]
 
     if command in gets:
         db_url = FIREBASE_URL + user_message
@@ -131,8 +132,28 @@ async def chat(message: ChatMessage):
         data = split_message[2]
 
         db_url = FIREBASE_URL + url
-        
+        data = data.replace("'", '"')
+        print(data)
         response = requests.post(db_url, json=data)
+        if response.status_code == 200:
+            bot_response = response.json()
+            return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
+            # bot_response = f"Your query was executed successfully: {bot_response}"
+
+        else:
+            bot_response = f" {response.status_code} - {response.text}"
+            return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+
+    elif command in patches:
+        print(f"PATCHING")
+        url = split_message[1]
+        data = split_message[2]
+
+        db_url = FIREBASE_URL + url
+        data = data.replace("'", '"')
+        print(data)
+        data = json.loads(data)
+        response = requests.patch(db_url, json=data)
         if response.status_code == 200:
             bot_response = response.json()
             return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
