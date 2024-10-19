@@ -96,8 +96,9 @@ async def chat(message: ChatMessage):
     patches = ["patch", "Patch", "PATCH"]
 
     if command in gets:
-        db_url = FIREBASE_URL + user_message
+        db_url = FIREBASE_URL + split_message[1]
         response = requests.get(db_url)
+        print(f"GETTING from {db_url}")
         if response.status_code == 200:
             bot_response = response.json()
             return JSONResponse(content={"reply": f"Your query was executed successfully: \n {bot_response}" })
