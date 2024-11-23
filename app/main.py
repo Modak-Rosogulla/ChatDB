@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 import os
 import shutil
 from pydantic import BaseModel
+from app.sql_helpers import SqlHelper
 
 
 load_dotenv()
@@ -19,6 +20,8 @@ app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
+sql_obj = SqlHelper()
 
 class ChatMessage(BaseModel):
     message: str
@@ -34,8 +37,11 @@ def root(request: Request):
     # return {"message": "Welcome to ChatDB"}
 
 @app.get("/mysql")
-def mysql():
-    return {"message": "MySQL"}
+def mysql(request: Request):
+    return templates.TemplateResponse(
+        name="mysql.html", 
+        context={"request": request}
+    )
 
 @app.get("/mongodb")
 def mongodb():
@@ -200,3 +206,34 @@ async def chat(request: Request):
         bot_response = f" {response.status_code} - {response.text}"
         return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
 
+
+@app.get("/sql_data")
+async def chat(request: Request):
+    # user_message = message.message
+    # db_url = FIREBASE_URL + "/.json"
+
+    # print(f"Executing requests.get({db_url})")
+
+    # response = requests.get(db_url)
+    
+    # if response.status_code == 200:
+    #     # return JSONResponse(content={"reply": response.json() })
+    #     return response.json()
+    #     # bot_response = f"Your query was executed successfully: {bot_response}"
+
+    # else:
+    #     bot_response = f" {response.status_code} - {response.text}"
+    #     return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
+    
+    result = sql_obj.execute_user_query("SHOW TABLES;")
+    return JSONResponse(content={"reply": result })
+
+
+@app.post("/chat_sql")
+async def chat_sql(message: ChatMessage):
+    # Simple echo response for demonstration
+    # Replace this with your logic for generating responses
+    
+    user_message = message.message
+    
+    
