@@ -18,7 +18,7 @@ class SqlHelper:
         # databases = self.cursor.fetchall()
         # print(f"Databases: {databases}")
         
-        self.select_database("hello_Databases")
+        # self.select_database("hello_Databases")
 
 
     def create_connection(self):
