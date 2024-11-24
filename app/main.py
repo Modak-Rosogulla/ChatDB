@@ -209,22 +209,7 @@ async def chat(request: Request):
 
 @app.get("/sql_data")
 async def chat(request: Request):
-    # user_message = message.message
-    # db_url = FIREBASE_URL + "/.json"
 
-    # print(f"Executing requests.get({db_url})")
-
-    # response = requests.get(db_url)
-    
-    # if response.status_code == 200:
-    #     # return JSONResponse(content={"reply": response.json() })
-    #     return response.json()
-    #     # bot_response = f"Your query was executed successfully: {bot_response}"
-
-    # else:
-    #     bot_response = f" {response.status_code} - {response.text}"
-    #     return JSONResponse(content={"reply": f"Your query ran into an error :( \n {bot_response}"})
-    
     result = sql_obj.execute_user_query("SHOW TABLES;")
     return JSONResponse(content={"reply": result })
 
@@ -235,5 +220,9 @@ async def chat_sql(message: ChatMessage):
     # Replace this with your logic for generating responses
     
     user_message = message.message
+
+    result = sql_obj.execute_user_query(user_message)
+
+    return JSONResponse(content={"reply": result })
     
     

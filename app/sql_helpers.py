@@ -11,7 +11,13 @@ class SqlHelper:
     def __init__(self):
         self.connection = self.create_connection()
         self.cursor = self.connection.cursor()
-        # print(f"{self.cursor.execute('SHOW DATABASES')}")
+        # self.create_database_sample()
+
+        # # Fetch results from SHOW DATABASES
+        # self.cursor.execute('SHOW DATABASES')
+        # databases = self.cursor.fetchall()
+        # print(f"Databases: {databases}")
+        
         self.select_database("hello_Databases")
 
 
@@ -27,42 +33,24 @@ class SqlHelper:
     
     def execute_user_query(self, query):
         self.cursor.execute(query)
+        # Fetch results if the query returns any
+        if self.cursor.with_rows:
+            return self.cursor.fetchall()
+        return None
 
     def select_database(self, database_name):
-        # try:
-
         self.cursor.execute(f"USE {database_name}")
-        # except:
 
-
-# def create_database(connection):
-#     cursor = connection.cursor()
-#     cursor.execute("CREATE DATABASE IF NOT EXISTS hello_Databases")
-#     cursor.execute("USE hello_Databases")
-
-
-# def create_sample_table(connection):
-#     cursor = connection.cursor()
-#     # cursor.execute("CREATE TABLE hello_world (id INT PRIMARY KEY, name VARCHAR(255))")    
-#     cursor.execute("CREATE TABLE IF NOT EXISTS hello_world (id INT PRIMARY KEY, name VARCHAR(255))")    
-
-
-# def view_all_tables(connection):
-#     cursor = connection.cursor()
-#     cursor.execute("SHOW TABLES")
-#     for table in cursor:
-#         print(table)
-
-
-# def run_user_query(connection, query):
-#     cursor = connection.cursor()
-#     cursor.execute(query)
+    def create_database_sample(self):
+        self.cursor.execute("CREATE DATABASE IF NOT EXISTS hello_Databases")
 
 
 if __name__ == "__main__":
     sql_obj = SqlHelper()
     
-    output = sql_obj.execute_user_query("SHOW TABLES;")
+    sql_obj.execute_user_query("CREATE TABLE IF NOT EXISTS hello_world_1 (id INT PRIMARY KEY, name VARCHAR(255))")
+    tables = sql_obj.execute_user_query("SHOW TABLES;")
 
-    print(f"type: {type(output)}")
-    print(f"output: {output}")
+    # print(f"type: {type(output)}")
+    print(f"output1: {tables}")
+    # print(f"output: {output}")
