@@ -11,6 +11,7 @@ import shutil
 from pydantic import BaseModel
 from app.sql_helpers import SqlHelper, generate_create_table_query
 import csv
+from app.query_preprocessor import process_user_query
 
 load_dotenv()
 FIREBASE_URL = os.getenv('DATABASE_URL')
@@ -22,6 +23,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 sql_obj = SqlHelper()
+tables = {}
 
 class ChatMessage(BaseModel):
     message: str
@@ -209,7 +211,6 @@ async def chat(request: Request):
 
 @app.get("/mysql_data")
 async def chat(request: Request):
-
     databases = sql_obj.execute_user_query("SHOW DATABASES;")
     # databases = sql_obj.cursor.fetchall()
 
@@ -232,15 +233,36 @@ async def select_database(request: Request):
 
 @app.post("/chat_sql")
 async def chat_sql(message: ChatMessage):
+    global tables
     # Simple echo response for demonstration
     # Replace this with your logic for generating responses
     
     user_message = message.message
 
-    result = sql_obj.execute_user_query(user_message)
+    # result = sql_obj.execute_user_query(user_message)
 
-    return JSONResponse(content={"reply": result })
-    
+    # return JSONResponse(content={"reply": result })
+    try:
+
+        generated_query = process_user_query(user_message,tables)
+        print(f"Generated SQL Query: {generated_query}")
+
+        if "Error" in generated_query:
+            return JSONResponse(content={"error": generated_query}, status_code=400)
+
+        result = sql_obj.execute_user_query(generated_query)
+        
+        if result is None:
+            return JSONResponse(content={"reply": "Query executed successfully, but no data was returned."})
+        
+        if isinstance(result, dict) and "columns" in result and "rows" in result:
+            # Query returned data with columns and rows
+            return JSONResponse(content={"reply":result})
+        else:
+            # Query returned rows without column names
+            return JSONResponse(content={"reply": result})
+    except Exception as e:
+        return JSONResponse(content={"reply": "Sorry, there was an error."}, status_code=500)
 
 
 @app.post("/upload_to_mysql")
@@ -306,5 +328,18 @@ async def upload_to_mysql(file: UploadFile = File(...), table_name: str = None):
 
         return JSONResponse(content={"message": f"Data uploaded successfully to table '{table_name}'."})
 
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.post("/refresh_metadata")
+async def refresh_metadata():
+    """
+    Refresh table metadata dynamically from the selected database.
+    """
+    try:
+        global tables  # Use the global tables variable
+        tables = sql_obj.get_table_metadata()  # Call helper function to fetch metadata
+        return JSONResponse(content={"message": "Metadata refreshed successfully!", "tables": tables})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import mysql.connector
 import os
 from dotenv import load_dotenv
@@ -20,12 +22,21 @@ class SqlHelper:
         )
 
         return connection
-    
     def execute_user_query(self, query):
         self.cursor.execute(query)
         # Fetch results if the query returns any
         if self.cursor.with_rows:
-            return self.cursor.fetchall()
+            if "*" not in query:
+                return self.cursor.fetchall()
+            else:
+                rows = self.cursor.fetchall()
+                column_names = [desc[0] for desc in self.cursor.description]
+                # Convert datetime to string
+                processed_rows = [
+                    tuple(item.isoformat() if isinstance(item, datetime) else item for item in row)
+                    for row in rows
+                ]
+                return {"columns": column_names, "rows": processed_rows}
         return None
 
     def select_database(self, database_name):
@@ -49,6 +60,21 @@ class SqlHelper:
         for value in values:
             self.cursor.execute(query, value)
         self.connection.commit()
+    
+    def get_table_metadata(self):
+        metadata = {}
+
+        # Fetch all table names
+        self.cursor.execute("SHOW TABLES;")
+        tables = self.cursor.fetchall()
+
+        for (table_name,) in tables:
+            # Fetch columns for each table
+            self.cursor.execute(f"SHOW COLUMNS FROM {table_name};")
+            columns = [column[0] for column in self.cursor.fetchall()]
+            metadata[table_name] = columns
+
+        return metadata
 
 
 

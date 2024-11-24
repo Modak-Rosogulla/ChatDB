@@ -89,13 +89,66 @@
         
                     if (response.ok) {
                         const data = await response.json();
-                        addMessageToChat('bot', data.reply);
+                        if (data.error) {
+                            addMessageToChat('bot', 'Sorry, there was an error.');
+                        } else if (data.reply.columns && data.reply.rows) {
+                            addTableToChat('bot', data.reply.columns, data.reply.rows);
+                        } else if (data.reply.rows) {
+                            // Display rows without column names
+                            addMessageToChat('bot', JSON.stringify(data.reply.rows));
+                        } else if (data.reply.message) {
+                            addMessageToChat('bot', data.reply.message);
+                        } else {
+                            addMessageToChat('bot', data.reply);
+                        }
                     } else {
                         addMessageToChat('bot', 'Sorry, there was an error.');
                     }
                 }
+
+                await refreshMetadata();
             }
         
+            function addTableToChat(sender, columns, rows) {
+                const chatBox = document.getElementById('chat-box');
+                
+                // Create table container
+                const tableContainer = document.createElement('div');
+                tableContainer.className = `message ${sender}`;
+
+                // Create table
+                const table = document.createElement('table');
+                table.className = 'chat-table';
+
+                // Add table headers
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                columns.forEach(column => {
+                    const th = document.createElement('th');
+                    th.textContent = column;
+                    headerRow.appendChild(th);
+                });
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+
+                // Add table rows
+                const tbody = document.createElement('tbody');
+                rows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    row.forEach(cell => {
+                        const td = document.createElement('td');
+                        td.textContent = cell;
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+
+                tableContainer.appendChild(table);
+                chatBox.appendChild(tableContainer);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
             function addMessageToChat(sender, message) {
                 const chatBox = document.getElementById('chat-box');
                 const messageElement = document.createElement('div');
@@ -123,6 +176,8 @@
                       const data = await response.json();
                     //   alert(data.message);
                     addMessageToChat('bot', data.message);
+
+                    await refreshMetadata();
                   } catch (error) {
                         addMessageToChat('bot', `Error: ${error.message}`);
                       console.error(error);
@@ -131,6 +186,21 @@
               }
 
             document.addEventListener('DOMContentLoaded', loadSQLData);
+
+            async function refreshMetadata() {
+                try {
+                    const response = await fetch('/refresh_metadata', { method: 'POST' });
+
+                    if (!response.ok) {
+                        throw new Error(`Error refreshing metadata: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    console.log("Refreshed Metadata:", data.tables); // Optional: Log metadata for debugging
+                } catch (error) {
+                    console.error("Failed to refresh metadata:", error.message);
+                }
+            }
 
 
           
