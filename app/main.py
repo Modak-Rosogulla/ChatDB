@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 import os
 import shutil
 from pydantic import BaseModel
-from app.sql_helpers import SqlHelper
+from app.sql_helpers import SqlHelper, generate_create_table_query
 import csv
 
 load_dotenv()
@@ -251,7 +251,7 @@ async def upload_to_mysql(file: UploadFile = File(...), table_name: str = None):
     - Inserts all the file's data into the created table
     """
     try:
-        # Save uploaded file to a local folder
+    # Save uploaded file to a local folder
         print(f"[Inside upload_to_mysql] uploading")
         upload_folder = "uploads/"
         os.makedirs(upload_folder, exist_ok=True)
@@ -282,7 +282,7 @@ async def upload_to_mysql(file: UploadFile = File(...), table_name: str = None):
 
                 print(f"created table {table_name}")
                 # Insert data into the table
-                insert_data_into_table(table_name, columns, rows)
+                sql_obj.insert_data_into_table(table_name, columns, rows)
 
         # Process JSON file
         elif file_extension == ".json":
@@ -297,7 +297,7 @@ async def upload_to_mysql(file: UploadFile = File(...), table_name: str = None):
                     sql_obj.execute_user_query(create_table_query)
 
                     # Insert data into the table
-                    insert_data_into_table(table_name, columns, rows)
+                    sql_obj.insert_data_into_table(table_name, columns, rows)
                 else:
                     raise HTTPException(status_code=400, detail="JSON file must contain a list of objects.")
 
@@ -308,29 +308,3 @@ async def upload_to_mysql(file: UploadFile = File(...), table_name: str = None):
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-
-
-
-def generate_create_table_query(table_name, columns):
-    """
-    Generate a SQL query to create a table based on the provided column names.
-    """
-    columns_definition = ", ".join([f"`{col}` TEXT" for col in columns])  # Default to TEXT for simplicity
-    query = f"CREATE TABLE IF NOT EXISTS `{table_name}` ({columns_definition});"
-    return query
-
-
-def insert_data_into_table(table_name, columns, rows):
-    """
-    Insert data into a table row by row.
-    """
-    placeholders = ", ".join(["%s"] * len(columns))
-    query = f"INSERT INTO `{table_name}` ({', '.join(columns)}) VALUES ({placeholders})"
-
-    # Prepare rows as tuples
-    values = [tuple(row[col] for col in columns) for row in rows]
-
-    # Execute query for all rows
-    for value in values:
-        sql_obj.cursor.execute(query, value)
-    sql_obj.connection.commit()

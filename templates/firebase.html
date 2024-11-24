@@ -9,6 +9,9 @@
 
 </head>
 <body>
+    <div class="back-button-container">
+        <a href="/" class="back-button">Back to Home</a>
+    </div>
     <div class="container">
         <h2>Your Data in Firebase</h2>
         <div id="json-viewer"></div>
@@ -158,6 +161,15 @@
             window.onload = () => {
                 refreshDataResetState();
             };
+
+
+            document.getElementById('chat-input').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent the default action (submitting a form if inside a form)
+                    sendMessage(); // Call the sendMessage function
+                }
+            });
+
         </script>
         
 </body>

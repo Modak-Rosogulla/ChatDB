@@ -9,6 +9,10 @@
 
 </head>
 <body>
+    <div class="back-button-container">
+        <a href="/" class="back-button">Back to Home</a>
+    </div>
+    
     <div class="container">
         <h2>Your Data in MySQL Database</h2>
         <!-- <div id="json-viewer"></div> -->
@@ -47,22 +51,6 @@
 
     
       <script>
-
-            // async function loadSQLData() {
-        
-            //     try {
-            //         const response = await fetch('/mysql_data');
-            //         if (!response.ok) {
-            //             throw new Error(`Error fetching data: ${response.statusText}`);
-            //         }
-            //         const data = await response.json();
-            //         // const container = document.getElementById('json-viewer');
-            //         // createTree(container, data);
-            //     } catch (error) {
-            //         console.error(error);
-            //         // Optionally display an error message in the UI
-            //     }
-            // }
             async function loadSQLData() {
                   try {
                       const response = await fetch('/mysql_data');
@@ -133,8 +121,10 @@
                       }
 
                       const data = await response.json();
-                      alert(data.message);
+                    //   alert(data.message);
+                    addMessageToChat('bot', data.message);
                   } catch (error) {
+                        addMessageToChat('bot', `Error: ${error.message}`);
                       console.error(error);
                   }
                   }
@@ -155,13 +145,23 @@
 
               if (response.ok) {
                   const result = await response.json();
-                  alert(result.message);
+                //   alert(result.message);
+                    addMessageToChat('bot', result.message);
               } else {
                   const error = await response.json();
+                  addMessageToChat('bot', `Error: ${error.error}`);
                   alert(`Error: ${error.error}`);
               }
           };
-        
+          
+
+          document.getElementById('chat-input').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent the default action (submitting a form if inside a form)
+                    sendMessage(); // Call the sendMessage function
+                }
+            });
+
         </script>
         
 </body>
