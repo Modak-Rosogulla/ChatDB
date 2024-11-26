@@ -32,7 +32,6 @@
 
     <script>
         let expandedPaths = new Set();
-
         function createTree(container, json, currentPath = '') {
             container.innerHTML = '';
 
@@ -40,30 +39,38 @@
                 const node = document.createElement('div');
                 node.className = 'node';
 
-                const label = document.createElement('span');
-                label.className = typeof value === 'object' && value !== null ? 'expandable' : 'leaf';
-                label.textContent = name;
+                const label = document.createElement('div');
+                label.className = 'label';
+
+                const arrow = document.createElement('span');
+                arrow.className = 'arrow';
+                arrow.textContent = '▶';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = name;
 
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = 'children hidden';
 
+                label.appendChild(arrow);
+                label.appendChild(nameSpan);
+
+                // Handle object and array expansion
                 if (typeof value === 'object' && value !== null) {
                     label.onclick = () => {
                         const isVisible = !childrenContainer.classList.contains('hidden');
                         childrenContainer.classList.toggle('hidden', isVisible);
-
+                        arrow.textContent = isVisible ? '▶' : '▼';
                         if (isVisible) {
                             expandedPaths.delete(path);
-                            label.textContent = name;
                         } else {
                             expandedPaths.add(path);
-                            label.textContent = `▶ ${name}`;
                         }
                     };
 
                     if (expandedPaths.has(path)) {
                         childrenContainer.classList.remove('hidden');
-                        label.textContent = `▶ ${name}`;
+                        arrow.textContent = '▼';
                     }
 
                     for (const key in value) {
@@ -130,14 +137,13 @@
 
                     if (response.ok) {
                         const data = await response.json();
-                        addMessageToChat('bot', data.reply);
+                        addMessageToChat('bot', JSON.stringify(data.reply, null, 2));
                     } else {
-                        addMessageToChat('bot', 'Sorry, there was an error.');
+                        addMessageToChat('bot', 'Error executing the query.');
                     }
-
-                    refreshDataPreserveState();
                 } catch (error) {
                     console.error(error);
+                    addMessageToChat('bot', 'Network error occurred.');
                 }
             }
         }
