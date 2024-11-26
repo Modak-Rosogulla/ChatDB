@@ -348,21 +348,6 @@ async def refresh_metadata():
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# @app.get("/mongodb_data")
-# async def mongodb_data():
-#     """
-#     Fetch data from MongoDB collections dynamically.
-#     """
-#     try:
-#         mongo_helper = MongoDBHelper()
-#         data = {}
-#         for collection_name in mongo_helper.db.list_collection_names():
-#             data[collection_name] = list(mongo_helper.db[collection_name].find())
-#         print(f"data: {data}")
-#         return JSONResponse(content={"data": data})
-        
-#     except Exception as e:
-#         return JSONResponse(content={"error": str(e)}, status_code=500)
     
 @app.get("/mongodb_data")
 async def mongodb_data():
@@ -377,8 +362,6 @@ async def mongodb_data():
         return JSONResponse(content=data)
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-
-
 
 from bson import ObjectId
 
@@ -395,40 +378,7 @@ def json_serializer(obj):
         return {key: json_serializer(value) for key, value in obj.items()}
     return obj
 
-    # except Exception as e:
-    #     return JSONResponse(content={"error": str(e)}, status_code=500)
-
-# @app.post("/chat_mongo")
-# async def chat_mongo(message: ChatMessage):
-#     """
-#     Execute MongoDB queries sent via chat input.
-#     """
-#     try:
-#         mongo_helper = MongoDBHelper()
-#         user_query = json.loads(message.message)  # Parse the message into a JSON object
-#         response = mongo_helper.execute_user_query(user_query)
-#         print(f"response: {response}")
-
-#         return JSONResponse(content={"reply": str(response)})
-        
-#     except Exception as e:
-#         return JSONResponse(content={"reply": f"Error: {str(e)}"}, status_code=500)
-
-
-# @app.post("/chat_mongo")
-# async def chat_mongo(message: ChatMessage):
-#     """
-#     Parse and execute MongoDB commands from the chat interface.
-#     """
-#     # try:
-#     mongo_helper = MongoDBHelper()
-#     user_query = json.loads(message.message)  # Parse the user's input
-#     print(f"User Query: {user_query}")
-#     response = mongo_helper.execute_user_query(user_query)
-#     return JSONResponse(content={"reply": response})
-    # except Exception as e:
-    #     return JSONResponse(content={"reply": f"Error: {str(e)}"}, status_code=500)
-
+import json
 
 @app.post("/chat_mongo")
 async def chat_mongo(message: ChatMessage):
@@ -439,19 +389,21 @@ async def chat_mongo(message: ChatMessage):
         mongo_helper = MongoDBHelper()
         user_query = message.message.strip()
 
+        print(f"message.message: {message.message}")
+
         # Preprocess the input query
         if user_query.startswith("db."):
             collection_name = user_query.split(".")[1].split("(")[0]
             operation = user_query.split(".")[2].split("(")[0]
-            
+
             # Extract the JSON part of the query
             parameters = user_query[user_query.index("(") + 1:user_query.rindex(")")]
 
-            # Convert to a Python dictionary if JSON-like
+            # Parse parameters using json.loads for safe and valid JSON handling
             try:
-                parameters = eval(parameters)  # Use eval carefully for safe data
-            except Exception as e:
-                raise ValueError(f"Invalid JSON parameters in query: {parameters}")
+                parameters = json.loads(parameters)  # Safely parse JSON
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON parameters in query: {parameters}. Error: {e}")
 
             # Format the query for the MongoDB helper
             query = {
@@ -459,10 +411,15 @@ async def chat_mongo(message: ChatMessage):
                 "operation": operation,
                 "parameters": parameters
             }
+            print(f"query: {query}")
 
             # Execute the query using the MongoDB helper
             response = mongo_helper.execute_user_query(query)
+            print(f"response: {response}")
+
+            # Return the JSON response
             return JSONResponse(content={"reply": response})
+
         else:
             return JSONResponse(content={"reply": "Invalid query format."}, status_code=400)
 

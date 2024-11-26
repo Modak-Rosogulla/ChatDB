@@ -138,7 +138,8 @@
                     if (response.ok) {
                         const data = await response.json();
                         addMessageToChat('bot', JSON.stringify(data.reply, null, 2));
-                    } else {
+                    }
+                    else {
                         addMessageToChat('bot', 'Error executing the query.');
                     }
                 } catch (error) {
