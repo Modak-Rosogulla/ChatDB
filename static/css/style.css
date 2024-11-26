@@ -157,9 +157,11 @@ button[type="submit"]:hover {
     border-radius: 8px;
     background-color: #007bff;
     color: white;
-    width: fit-content;
+    width: auto;
     max-width: 70%;
-}
+    white-space: pre-wrap; /* Respect newline characters */
+    overflow-wrap: break-word; /* Wrap long messages */
+  }
 
 .message.user {
     background-color: #e1e1e1;

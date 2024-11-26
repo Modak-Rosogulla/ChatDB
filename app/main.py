@@ -12,7 +12,7 @@ import shutil
 from pydantic import BaseModel
 from app.sql_helpers import SqlHelper, generate_create_table_query
 import csv
-from app.query_preprocessor import process_user_query
+from app.sql_query_preprocessor import process_user_query
 
 load_dotenv()
 FIREBASE_URL = os.getenv('DATABASE_URL')
@@ -247,24 +247,49 @@ async def chat_sql(message: ChatMessage):
 
     # return JSONResponse(content={"reply": result })
     try:
+        try:
+            result_direct = sql_obj.execute_user_query(user_message)
+        except Exception as e:
+            if e is not None or result_direct is None:
 
-        generated_query = process_user_query(user_message,tables)
-        print(f"Generated SQL Query: {generated_query}")
+                generated_query = process_user_query(user_message,tables)
+                print(f"Generated SQL Query: {generated_query}")
 
-        if "Error" in generated_query:
-            return JSONResponse(content={"error": generated_query}, status_code=400)
+                if "Error" in generated_query:
+                    return JSONResponse(content={"error": generated_query}, status_code=400)
+                
+                if "Query" in generated_query:
+                    return JSONResponse(content={"reply":generated_query})
 
-        result = sql_obj.execute_user_query(generated_query)
-        
-        if result is None:
+                result = sql_obj.execute_user_query(generated_query)
+                
+                if result is None:
+                    return JSONResponse(content={"reply": "Query executed successfully, but no data was returned."})
+                
+                if isinstance(result, dict) and "columns" in result and "rows" in result:
+                    # Query returned data with columns and rows
+                    return JSONResponse(content={"reply":result})
+                else:
+                    # Query returned rows without column names
+                    return JSONResponse(content={"reply": result})
+            elif result_direct is None:
+                return JSONResponse(content={"reply": "Query executed successfully, but no data was returned."})
+            
+            elif isinstance(result_direct, dict) and "columns" in result_direct and "rows" in result_direct:
+                # Query returned data with columns and rows
+                return JSONResponse(content={"reply":result_direct})
+            else:
+                # Query returned rows without column names
+                return JSONResponse(content={"reply": result_direct})
+        if result_direct is None:
             return JSONResponse(content={"reply": "Query executed successfully, but no data was returned."})
         
-        if isinstance(result, dict) and "columns" in result and "rows" in result:
+        if isinstance(result_direct, dict) and "columns" in result_direct and "rows" in result_direct:
             # Query returned data with columns and rows
-            return JSONResponse(content={"reply":result})
+            return JSONResponse(content={"reply":result_direct})
         else:
             # Query returned rows without column names
-            return JSONResponse(content={"reply": result})
+            return JSONResponse(content={"reply": result_direct})
     except Exception as e:
         return JSONResponse(content={"reply": "Sorry, there was an error."}, status_code=500)
 
