@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MongoDB</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}" />
+</head>
+<body>
+    <div class="back-button-container">
+        <a href="/" class="back-button">Back to Home</a>
+    </div>
+    <div class="container">
+        <h2>Your Data in MongoDB</h2>
+        <div id="json-viewer"></div>
+        <div class="button-container">
+            <button onclick="refreshDataPreserveState()">Refresh Data (Preserve State)</button>
+            <button onclick="refreshDataResetState()">Refresh Data (Reset State)</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Chatbot</h2>
+        <div class="chat-box" id="chat-box">
+            <!-- Messages will appear here -->
+        </div>
+        <div class="input-container">
+            <input type="text" id="chat-input" placeholder="Enter MongoDB Query..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        let expandedPaths = new Set();
+
+        function createTree(container, json, currentPath = '') {
+            container.innerHTML = '';
+
+            function createNode(name, value, path) {
+                const node = document.createElement('div');
+                node.className = 'node';
+
+                const label = document.createElement('span');
+                label.className = typeof value === 'object' && value !== null ? 'expandable' : 'leaf';
+                label.textContent = name;
+
+                const childrenContainer = document.createElement('div');
+                childrenContainer.className = 'children hidden';
+
+                if (typeof value === 'object' && value !== null) {
+                    label.onclick = () => {
+                        const isVisible = !childrenContainer.classList.contains('hidden');
+                        childrenContainer.classList.toggle('hidden', isVisible);
+
+                        if (isVisible) {
+                            expandedPaths.delete(path);
+                            label.textContent = name;
+                        } else {
+                            expandedPaths.add(path);
+                            label.textContent = `▶ ${name}`;
+                        }
+                    };
+
+                    if (expandedPaths.has(path)) {
+                        childrenContainer.classList.remove('hidden');
+                        label.textContent = `▶ ${name}`;
+                    }
+
+                    for (const key in value) {
+                        childrenContainer.appendChild(createNode(key, value[key], `${path}/${key}`));
+                    }
+                } else {
+                    const valueSpan = document.createElement('span');
+                    valueSpan.className = 'value';
+                    valueSpan.textContent = `: ${value}`;
+                    label.appendChild(valueSpan);
+                }
+
+                node.appendChild(label);
+                node.appendChild(childrenContainer);
+
+                return node;
+            }
+
+            for (const key in json) {
+                container.appendChild(createNode(key, json[key], key));
+            }
+        }
+
+        async function loadMongoData(preserveState = true) {
+            if (!preserveState) {
+                expandedPaths.clear();
+            }
+
+            try {
+                const response = await fetch('/mongodb_data');
+                if (!response.ok) {
+                    throw new Error(`Error fetching data: ${response.statusText}`);
+                }
+                const data = await response.json();
+                const container = document.getElementById('json-viewer');
+                createTree(container, data);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function refreshDataPreserveState() {
+            loadMongoData(true);
+        }
+
+        function refreshDataResetState() {
+            loadMongoData(false);
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (message) {
+                addMessageToChat('user', message);
+                input.value = '';
+
+                try {
+                    const response = await fetch('/chat_mongo', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        addMessageToChat('bot', data.reply);
+                    } else {
+                        addMessageToChat('bot', 'Sorry, there was an error.');
+                    }
+
+                    refreshDataPreserveState();
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+        }
+
+        function addMessageToChat(sender, message) {
+            const chatBox = document.getElementById('chat-box');
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}`;
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        window.onload = () => {
+            refreshDataResetState();
+        };
+
+        document.getElementById('chat-input').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

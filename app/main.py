@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File ,HTTPException
 from app.firebase_helpers import load_data_to_firebase, search_by_id
+from app.mongo_helpers import MongoDBHelper
 from fastapi.templating import Jinja2Templates
 import requests
 import json
@@ -46,8 +47,11 @@ def mysql(request: Request):
     )
 
 @app.get("/mongodb")
-def mongodb():
-    return {"message": "MongoDB"}
+def mongodb(request: Request):
+    # return {"message": "MongoDB"}
+    return templates.TemplateResponse(
+        name="mongodb.html", 
+        context={"request": request})
 
 @app.get("/firebase")
 def firebase(request: Request):
@@ -343,3 +347,36 @@ async def refresh_metadata():
         return JSONResponse(content={"message": "Metadata refreshed successfully!", "tables": tables})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/mongodb_data")
+async def mongodb_data():
+    """
+    Fetch data from MongoDB collections dynamically.
+    """
+    try:
+        mongo_helper = MongoDBHelper()
+        data = {}
+        for collection_name in mongo_helper.db.list_collection_names():
+            data[collection_name] = list(mongo_helper.db[collection_name].find())
+        print(f"data: {data}")
+        return JSONResponse(content={"data": data})
+        
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+    
+
+@app.post("/chat_mongo")
+async def chat_mongo(message: ChatMessage):
+    """
+    Execute MongoDB queries sent via chat input.
+    """
+    try:
+        mongo_helper = MongoDBHelper()
+        user_query = json.loads(message.message)  # Parse the message into a JSON object
+        response = mongo_helper.execute_user_query(user_query)
+        print(f"response: {response}")
+
+        return JSONResponse(content={"reply": str(response)})
+        
+    except Exception as e:
+        return JSONResponse(content={"reply": f"Error: {str(e)}"}, status_code=500)

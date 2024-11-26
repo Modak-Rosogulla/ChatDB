@@ -6,7 +6,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 import random
 print(nltk.data.path)
-print("Tokenizers Path Exists:", "tokenizers/punkt" in nltk.data.find("tokenizers/punkt").path)
+# print("Tokenizers Path Exists:", "tokenizers/punkt" in nltk.data.find("tokenizers/punkt").path)
 # Download necessary NLTK resources
 current_dir = os.path.dirname(os.path.abspath(__file__))
 nltk_data_dir = os.path.join(current_dir, "nltk_data")
