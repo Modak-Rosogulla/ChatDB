@@ -1,18 +1,3 @@
-<!-- # ChatDB
-
-
-## 1. SETUP
-
-1. Create a virtual environment "python -m venv chatdb_env"
-2. Activate venv
-    a. Windows = "chatdb_env\Scripts\activate"
-    b. Linux = "source chatdb_env/bin/activate"
-3. pip install -r requirements.txt
-4. Fill the .env file with appropriate URLs provided
-5. Run python main.py -->
-
-
-
 # ChatDB
 
 ChatDB is a user-friendly web application that allows users to interact with both SQL and NoSQL databases using natural language. It leverages advanced NLP techniques to generate database queries seamlessly, enabling efficient data exploration and management.
@@ -46,9 +31,10 @@ pip install -r requirements.txt
 ```
 
 ### Step 4:
-Configure environment variables by creating a .env file with the appropriate URLs
+Configure environment variables by filling the .env file with the appropriate URLs for MySQL & Firebase links
 
 ### Step 5: Run
+Please check http://localhost:8000 (or the link that appears) after running the following command.
 ```bash
 python main.py
 ```
